@@ -1,0 +1,40 @@
+package com.customcrosshair;
+
+import net.fabricmc.api.ClientModInitializer;
+import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
+import net.fabricmc.fabric.api.client.keybinding.v1.KeyBindingHelper;
+import net.fabricmc.fabric.api.client.rendering.v1.hud.HudElementRegistry;
+import net.fabricmc.fabric.api.client.rendering.v1.hud.VanillaHudElements;
+import net.minecraft.client.option.KeyBinding;
+import net.minecraft.client.util.InputUtil;
+import org.lwjgl.glfw.GLFW;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+public class CustomCrosshairClient implements ClientModInitializer {
+    public static final Logger LOGGER = LoggerFactory.getLogger("customcrosshair");
+
+    private static KeyBinding openEditor;
+
+    @Override
+    public void onInitializeClient() {
+        CrosshairConfig.load();
+
+        // Shows up in Options > Controls > Key Binds under "Miscellaneous" – rebind it there.
+        openEditor = KeyBindingHelper.registerKeyBinding(new KeyBinding(
+                "key.customcrosshair.open",
+                InputUtil.Type.KEYSYM,
+                GLFW.GLFW_KEY_K,
+                KeyBinding.Category.MISC));
+
+        ClientTickEvents.END_CLIENT_TICK.register(client -> {
+            while (openEditor.wasPressed()) {
+                if (client.currentScreen == null) client.setScreen(new CrosshairEditorScreen(null));
+            }
+        });
+
+        // Swap the vanilla crosshair for ours.
+        HudElementRegistry.replaceElement(VanillaHudElements.CROSSHAIR,
+                original -> (context, tickCounter) -> CrosshairRenderer.renderHud(context));
+    }
+}
